@@ -1,0 +1,12 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Wrapper package to run the Vite app in ams-frontend",
+  "scripts": {
+    "dev": "npm run dev --prefix ams-frontend",
+    "build": "npm run build --prefix ams-frontend",
+    "preview": "npm run preview --prefix ams-frontend",
+    "install-app": "npm install --prefix ams-frontend"
+  }
+}
