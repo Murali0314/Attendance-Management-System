@@ -1,9 +1,10 @@
+// server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
-const path = require('path'); // Only once
+const path = require('path');
 require('dotenv').config();
 
 const authRoutes = require('./src/routes/auth.routes');
@@ -19,15 +20,12 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(cookieParser());
 
-// CORS: allow local dev and Render frontend
-const allowedOrigins = [
-    'http://localhost:5173',
-    process.env.CLIENT_ORIGIN || 'https://attendance-management-system-4-386e.onrender.com' // Replace with your Render URL
-];
+// ------------------ CORS ------------------ //
+const renderFrontendURL = process.env.CLIENT_ORIGIN || 'https://attendance-management-system-4-386e.onrender.com';
+const allowedOrigins = ['http://localhost:5173', renderFrontendURL];
 
 app.use(cors({
     origin: function(origin, callback) {
-        // allow requests with no origin (e.g., curl, Postman)
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
@@ -36,6 +34,14 @@ app.use(cors({
     },
     credentials: true
 }));
+
+// Optional: CORS error handler
+app.use((err, req, res, next) => {
+    if (err.message === 'Not allowed by CORS') {
+        return res.status(403).json({ error: err.message });
+    }
+    next(err);
+});
 
 // ------------------ API Routes ------------------ //
 app.get('/api/health', (req, res) => {
@@ -72,3 +78,9 @@ mongoose.connect(MONGO_URI)
         console.error('Mongo connection error', err);
         process.exit(1);
     });
+
+// ------------------ Optional: Log unknown routes ------------------ //
+app.use((req, res, next) => {
+    console.log(`Unhandled route: ${req.method} ${req.originalUrl}`);
+    next();
+});
