@@ -21,13 +21,15 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ------------------ CORS ------------------ //
-const renderFrontendURL =
-  process.env.CLIENT_ORIGIN || 'https://attendance-management-system-4-386e.onrender.com';
-const allowedOrigins = ['http://localhost:5173', renderFrontendURL];
+const allowedOrigins = [
+  process.env.CLIENT_ORIGIN_LOCAL || 'http://localhost:5173',
+  process.env.CLIENT_ORIGIN_PROD || 'https://attendance-management-system-4-386e.onrender.com',
+];
 
 app.use(
   cors({
     origin: function (origin, callback) {
+      // allow requests with no origin (Postman, mobile apps)
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -38,7 +40,7 @@ app.use(
   })
 );
 
-// CORS error handler
+// Optional CORS error handler
 app.use((err, req, res, next) => {
   if (err.message === 'Not allowed by CORS') {
     return res.status(403).json({ error: err.message });
@@ -58,24 +60,26 @@ app.use('/api/admin', adminRoutes);
 
 // ------------------ Serve React Frontend ------------------ //
 if (process.env.NODE_ENV === 'production') {
-  const buildPath = path.join(__dirname, 'frontend', 'build');
+  const buildPath = path.join(__dirname, '../frontend/build'); // correct relative path
   app.use(express.static(buildPath));
 
-  // ✅ Express v5-compatible catch-all
-  app.get(/.*/, (req, res) => {
+  // Catch-all route for React Router (v4+)
+  app.get('*', (req, res) => {
     res.sendFile(path.join(buildPath, 'index.html'));
   });
 }
 
 // ------------------ MongoDB Connection ------------------ //
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/ams';
+const MONGO_URI =
+  process.env.MONGO_URI ||
+  'mongodb+srv://gorlamuralidhar:murali@cluster0.acymuxe.mongodb.net/ams?retryWrites=true&w=majority';
 
 mongoose
   .connect(MONGO_URI)
   .then(() => {
     console.log('✅ MongoDB connected');
-    app.listen(PORT, () => console.log(`🚀 Server listening on port ${PORT}`));
+    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
     startWeeklyCron();
   })
   .catch((err) => {
@@ -83,10 +87,10 @@ mongoose
     process.exit(1);
   });
 
-// ------------------ Unknown Routes Logger (API only) ------------------ //
+// ------------------ Unknown API Routes Logger ------------------ //
 app.use((req, res, next) => {
   if (req.originalUrl.startsWith('/api/')) {
-    console.log(`⚠️ Unhandled API route: ${req.method} ${req.originalUrl}`);
+    console.warn(`⚠️ Unhandled API route: ${req.method} ${req.originalUrl}`);
   }
   next();
 });
