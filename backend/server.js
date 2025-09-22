@@ -82,7 +82,7 @@ app.use('/api/students', studentRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/admin', adminRoutes);
 
-const path = require('path');
+
 
 // Serve React frontend for production
 if (process.env.NODE_ENV === 'production') {
