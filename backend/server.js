@@ -14,18 +14,20 @@ const { startWeeklyCron } = require('./src/cron/weekly.cron');
 
 const app = express();
 
-// Middleware
+// ------------------ Middleware ------------------ //
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(cookieParser());
 
-// CORS - allow local dev and Render frontend
+// CORS: allow local dev and Render frontend
+const allowedOrigins = [
+    'http://localhost:5173',
+    process.env.CLIENT_ORIGIN || 'https://attendance-management-system-4-386e.onrender.com' // Replace with your Render URL
+];
+
 app.use(cors({
-    origin: function (origin, callback) {
-        const allowedOrigins = [
-            'http://localhost:5173',
-            'https://attendance-management-system-3-igfc.onrender.com' // Replace with your Render URL
-        ];
+    origin: function(origin, callback) {
+        // allow requests with no origin (e.g., curl, Postman)
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
@@ -35,39 +37,38 @@ app.use(cors({
     credentials: true
 }));
 
-// API health check
+// ------------------ API Routes ------------------ //
 app.get('/api/health', (req, res) => {
     res.json({ success: true, message: 'API is healthy' });
 });
 
-// API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/admin', adminRoutes);
 
-// Serve React frontend in production
+// ------------------ Serve React Frontend ------------------ //
 if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, 'frontend', 'build')));
+    const buildPath = path.join(__dirname, 'frontend', 'build');
+    app.use(express.static(buildPath));
 
     // Catch-all route for React routing
-    app.use((req, res) => {
-        res.sendFile(path.join(__dirname, 'frontend', 'build', 'index.html'));
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(buildPath, 'index.html'));
     });
 }
 
-// MongoDB connection & start server
+// ------------------ MongoDB Connection ------------------ //
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/ams';
 
-mongoose
-    .connect(MONGO_URI)
+mongoose.connect(MONGO_URI)
     .then(() => {
         console.log('MongoDB connected');
         app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
         startWeeklyCron();
     })
-    .catch((err) => {
+    .catch(err => {
         console.error('Mongo connection error', err);
         process.exit(1);
     });
