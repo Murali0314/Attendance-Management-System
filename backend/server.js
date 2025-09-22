@@ -82,15 +82,18 @@ app.use('/api/students', studentRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/admin', adminRoutes);
 
-// Serve React frontend (for production)
+const path = require('path');
+
+// Serve React frontend for production
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, 'frontend', 'build')));
 
-    // Catch-all route
-    app.get('/*', (req, res) => {
+    // Catch-all route for React routing
+    app.use((req, res) => {
         res.sendFile(path.join(__dirname, 'frontend', 'build', 'index.html'));
     });
 }
+
 
 
 const PORT = process.env.PORT || 5000;
