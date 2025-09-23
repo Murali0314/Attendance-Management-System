@@ -60,10 +60,11 @@ app.use('/api/admin', adminRoutes);
 
 // ------------------ Serve React Frontend ------------------ //
 if (process.env.NODE_ENV === 'production') {
-  const buildPath = path.join(__dirname, '/frontend/build'); // correct relative path
+  const buildPath = path.join(__dirname, 'frontend','build'); // correct relative path
   app.use(express.static(buildPath));
 
   // Catch-all route for React Router (v4+)
+  app.use('/assets', express.static(path.join(buildPath, 'assets')));
   app.get(/.*/, (req, res) => {
     res.sendFile(path.join(buildPath, 'index.html'));
   });
