@@ -26,20 +26,24 @@ const allowedOrigins = [
   process.env.CLIENT_ORIGIN_PROD || 'https://attendance-management-system-4-386e.onrender.com',
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // allow requests with no origin (Postman, mobile apps)
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true,
-  })
-);
-
+// app.use(
+//   cors({
+//     origin: function (origin, callback) {
+//       // allow requests with no origin (Postman, mobile apps)
+//       if (!origin || allowedOrigins.includes(origin)) {
+//         callback(null, true);
+//       } else {
+//         callback(new Error('Not allowed by CORS'));
+//       }
+//     },
+//     credentials: true,
+//   })
+// );
+const allowedOrigins = [
+  process.env.CLIENT_ORIGIN_LOCAL || 'http://localhost:5173',
+  'https://attendance-management-system-27.onrender.com'
+];
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 // Optional CORS error handler
 app.use((err, req, res, next) => {
   if (err.message === 'Not allowed by CORS') {
