@@ -1,3 +1,4 @@
+// src/controllers/auth.controller.js
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
@@ -34,7 +35,15 @@ exports.login = async (req, res) => {
         if (!ok) return res.status(400).json({ success: false, message: 'Invalid credentials' });
         const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
         const token = jwt.sign({ id: user._id, role: user.role, subject: user.subject, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
-        res.cookie('token', token, { httpOnly: true, sameSite: 'lax', secure: false, maxAge: 7 * 24 * 60 * 60 * 1000 });
+
+        // Corrected cookie logic:
+        res.cookie('token', token, {
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
         return res.json({ success: true, message: 'Logged in', data: { role: user.role, subject: user.subject, name: user.name } });
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
