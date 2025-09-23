@@ -1,9 +1,10 @@
+// server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
-const path = require('path'); // Only once
+const path = require('path');
 require('dotenv').config();
 
 const authRoutes = require('./src/routes/auth.routes');
@@ -14,66 +15,78 @@ const { startWeeklyCron } = require('./src/cron/weekly.cron');
 
 const app = express();
 
-// Middleware
+// ------------------ Middleware ------------------ //
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(cookieParser());
 
-// CORS - allow local dev and Render frontend
-app.use(cors({
-    origin: function (origin, callback) {
-        const allowedOrigins = [
-            'http://localhost:5173',
-            'https://attendance-management-system-3-igfc.onrender.com' // Replace with your Render URL
-        ];
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true
-}));
+// ------------------ CORS ------------------ //
+const renderFrontendURL =
+  process.env.CLIENT_ORIGIN || 'https://attendance-management-system-4-386e.onrender.com';
+const allowedOrigins = ['http://localhost:5173', renderFrontendURL];
 
-// API health check
-app.get('/api/health', (req, res) => {
-    res.json({ success: true, message: 'API is healthy' });
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+  })
+);
+
+// CORS error handler
+app.use((err, req, res, next) => {
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({ error: err.message });
+  }
+  next(err);
 });
 
-// API routes
+// ------------------ API Routes ------------------ //
+app.get('/api/health', (req, res) => {
+  res.json({ success: true, message: 'API is healthy' });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/admin', adminRoutes);
 
-<<<<<<< HEAD
-
-
-// Serve React frontend for production
-=======
-// Serve React frontend in production
->>>>>>> 31ba716 (Update server.js for production with CORS fix)
+// ------------------ Serve React Frontend ------------------ //
 if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, 'frontend', 'build')));
+  const buildPath = path.join(__dirname, 'frontend', 'build');
+  app.use(express.static(buildPath));
 
-    // Catch-all route for React routing
-    app.use((req, res) => {
-        res.sendFile(path.join(__dirname, 'frontend', 'build', 'index.html'));
-    });
+  // ✅ Express v5-compatible catch-all
+  app.get(/.*/, (req, res) => {
+    res.sendFile(path.join(buildPath, 'index.html'));
+  });
 }
 
-// MongoDB connection & start server
+// ------------------ MongoDB Connection ------------------ //
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/ams';
 
 mongoose
-    .connect(MONGO_URI)
-    .then(() => {
-        console.log('MongoDB connected');
-        app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
-        startWeeklyCron();
-    })
-    .catch((err) => {
-        console.error('Mongo connection error', err);
-        process.exit(1);
-    });
+  .connect(MONGO_URI)
+  .then(() => {
+    console.log('✅ MongoDB connected');
+    app.listen(PORT, () => console.log(`🚀 Server listening on port ${PORT}`));
+    startWeeklyCron();
+  })
+  .catch((err) => {
+    console.error('❌ Mongo connection error', err);
+    process.exit(1);
+  });
+
+// ------------------ Unknown Routes Logger (API only) ------------------ //
+app.use((req, res, next) => {
+  if (req.originalUrl.startsWith('/api/')) {
+    console.log(`⚠️ Unhandled API route: ${req.method} ${req.originalUrl}`);
+  }
+  next();
+});
