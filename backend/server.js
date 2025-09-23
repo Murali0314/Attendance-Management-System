@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -7,11 +6,15 @@ const morgan = require('morgan');
 const path = require('path');
 require('dotenv').config();
 
+// Import your routes
 const authRoutes = require('./src/routes/auth.routes');
 const studentRoutes = require('./src/routes/student.routes');
 const attendanceRoutes = require('./src/routes/attendance.routes');
 const adminRoutes = require('./src/routes/admin.routes');
 const { startWeeklyCron } = require('./src/cron/weekly.cron');
+
+// NEW: Import the authentication middleware you created
+const { auth } = require('./src/middleware/auth');
 
 const app = express();
 
@@ -21,7 +24,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ------------------ CORS ------------------ //
-
+// This is the correct CORS configuration
 const allowedOrigins = [
   process.env.CLIENT_ORIGIN_LOCAL || 'http://localhost:5173',
   'https://attendance-management-system-27.onrender.com'
@@ -40,10 +43,14 @@ app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'API is healthy' });
 });
 
+// The auth route is public, so it has no middleware
 app.use('/api/auth', authRoutes);
-app.use('/api/students', studentRoutes);
-app.use('/api/attendance', attendanceRoutes);
-app.use('/api/admin', adminRoutes);
+
+// CORRECTED: Apply the authentication middleware to all protected routes
+// This is the critical step that was missing.
+app.use('/api/students', auth(['admin', 'teacher']), studentRoutes);
+app.use('/api/attendance', auth(['admin', 'teacher']), attendanceRoutes);
+app.use('/api/admin', auth(['admin']), adminRoutes);
 
 // ------------------ Serve React Frontend ------------------ //
 if (process.env.NODE_ENV === 'production') {
@@ -61,7 +68,7 @@ if (process.env.NODE_ENV === 'production') {
 const PORT = process.env.PORT || 5000;
 const MONGO_URI =
   process.env.MONGO_URI ||
-  'mongodb+srv://gorlamuralidhar:murali@cluster0.acymuxe.mongodb.net/ams?retryWrites=true&w=majority';
+  "mongodb+srv://gorlamuralidhar:murali@cluster0.acymuxe.mongodb.net/ams?retryWrites=true&w=majority";
 
 mongoose
   .connect(MONGO_URI)
