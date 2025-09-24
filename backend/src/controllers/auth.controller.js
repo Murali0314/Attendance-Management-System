@@ -36,23 +36,15 @@ exports.login = async (req, res) => {
         const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
         const token = jwt.sign({ id: user._id, role: user.role, subject: user.subject, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
 
-        // Corrected cookie logic:
-        res.cookie('token', token, {
-            httpOnly: true,
-            sameSite: 'lax',
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        });
-
-        return res.json({ success: true, message: 'Logged in', data: { role: user.role, subject: user.subject, name: user.name } });
+        // CRITICAL FIX: Send the token in the JSON body
+        return res.json({ success: true, message: 'Logged in', data: { role: user.role, subject: user.subject, name: user.name }, token: token });
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
 
 exports.logout = async (req, res) => {
+    // This is optional since your frontend uses localStorage
     res.clearCookie('token');
     return res.json({ success: true, message: 'Logged out' });
 };
-
-
