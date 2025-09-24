@@ -68,7 +68,7 @@ if (process.env.NODE_ENV === 'production') {
 const PORT = process.env.PORT || 5000;
 const MONGO_URI =
   process.env.MONGO_URI ||
-  "mongodb+srv://gorlamuralidhar:murali@cluster0.acymuxe.mongodb.net/ams?retryWrites=true&w=majority";
+  "mongodb+srv://gorlamuralidhar:murali@cluster0.acymuxe.mongodb.net/";
 
 mongoose
   .connect(MONGO_URI)
